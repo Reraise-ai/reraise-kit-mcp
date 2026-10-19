@@ -43,6 +43,9 @@ class SearchAndGet(Base):
         self.assertIn("three months", hits[0]["snippet"])
         self.assertNotIn("topic-garden", [h["id"] for h in hits])
 
+    def test_housekeeping_files_are_not_cards(self):
+        self.assertEqual(store.search("contradictions source changed pages catalogue"), [])
+
     def test_search_nothing(self):
         self.assertEqual(store.search("the and for"), [])
         self.assertEqual(store.search("volcano"), [])

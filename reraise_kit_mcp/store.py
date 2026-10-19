@@ -15,6 +15,7 @@ WRITE_FOLDERS = ("quellen", "themen", "personen-projekte", "synthesen")
 FOLDER_BY_TYPE = {"source": "quellen", "topic": "themen", "person": "personen-projekte", "project": "personen-projekte",
                   "synthesis": "synthesen"}
 COLLECTIONS = ("wiki", "raw")
+HOUSEKEEPING = ("index.md", "log.md", "SCHEMA.md")  # wiki files about the wiki, not knowledge
 SNIPPET = 400
 STOP = set("""aber alle allem allen aller alles also auch auf aus bei bin bis bitte dann das dass dein deine dem den der des
 die dies diese dieser doch dort durch ein eine einem einen einer eines euch fuer für gib habe haben hast hat hatte ich ihm
@@ -91,6 +92,8 @@ def _all(r, collection="wiki"):
         raise StoreError("collection must be one of %s" % ", ".join(COLLECTIONS))
     base = _wiki(r) if collection == "wiki" else os.path.join(r, "raw")
     for p in _files(base):
+        if collection == "wiki" and os.path.dirname(p) == base and os.path.basename(p) in HOUSEKEEPING:
+            continue
         c = _load(p, r)
         if c:
             yield c

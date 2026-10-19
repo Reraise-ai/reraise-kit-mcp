@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reraise-kit-mcp"
+version = "0.1.0"
+description = "MCP server and command line over a card-based knowledge store"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+dependencies = ["mcp>=2,<3", "reraise-kit-card-format>=0.1", "reraise-kit-knowledge>=0.1"]
+
+[project.scripts]
+reraise-kit-mcp = "reraise_kit_mcp.cli:main"
+
+[tool.setuptools]
+packages = ["reraise_kit_mcp"]

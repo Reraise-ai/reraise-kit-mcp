@@ -45,7 +45,7 @@ def _wiki(r=None):
 def _agent(agent):
     a = str(agent or os.environ.get("RERAISE_KIT_AGENT") or "mcp").strip()
     a = a[6:] if a.startswith("agent:") else a
-    if not re.match(r"^[A-Za-z0-9._-]+$", a):
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", a):
         raise StoreError("agent name may contain only letters, digits, '.', '_' and '-': %r" % a)
     return "agent:" + a
 
@@ -171,7 +171,7 @@ def _create(path, text):
 def _check_fields(fields):
     if not isinstance(fields, dict):
         raise StoreError("fields must be an object")
-    bad = [k for k in fields if not isinstance(k, str) or not _KEY.match(k)]
+    bad = [k for k in fields if not isinstance(k, str) or not _KEY.fullmatch(k)]
     if bad:
         raise StoreError("invalid field names: %s" % ", ".join(map(repr, bad)))
 
@@ -242,7 +242,7 @@ def propose(question, proposal, options=None, quote=None, ref=None, decided_by="
             raise StoreError("proposal not valid: " + "; ".join(errors))
         name = f["id"] + ".md"  # the file name is the id, so creating it exclusively also reserves the number
         body = "\n# Proposal %s: %s\n\nThis is a proposal by %s, not a decision. The owner confirms or discards it.\n" % (
-            f["id"], f["title"], a) + ("\nThe owner said: \"%s\" (%s)\n" % (quote, ref) if quote else "")
+            f["id"], _flat(f["title"]), a) + ("\nThe owner said: \"%s\" (%s)\n" % (_flat(quote), _flat(ref)) if quote else "")
         try:
             _create(os.path.join(folder, name), cardformat.dump(f, body))
             break
@@ -256,9 +256,13 @@ def propose(question, proposal, options=None, quote=None, ref=None, decided_by="
             "message": "Saved as proposal %s. It is not a decision until the owner confirms it." % f["id"]}
 
 
+def _flat(text):
+    return re.sub(r"\s+", " ", str(text)).strip()
+
+
 def _quote(text):
     """Card text can never close or fake the surrounding block, nor start a line of its own."""
-    return re.sub(r"\s+", " ", str(text)).replace("<", "&lt;").replace(">", "&gt;")
+    return _flat(text).replace("<", "&lt;").replace(">", "&gt;")
 
 
 def context_for(message, limit=5):

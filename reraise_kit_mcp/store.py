@@ -23,6 +23,7 @@ ihn ihr ist jetzt kann kannst kurz mal mein meine mich mir mit nach nicht noch n
 uns unser von vor war was welche welcher welches wenn wer wie wir wird wann wo wollen wurde zum zur zu über antworte sag
 sage zeig zeige mach mache the and for with what when which who how are was were this that have has had you your our
 from into about please tell show los las del por para con una uno que como cual""".split())
+AGENT_MAY_NOT_SET = ("decided_by", "decided_quote", "decided_ref", "captured_by", "proposed_by")
 _KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
@@ -172,10 +173,14 @@ def write(fields, body="", agent=None, folder=None):
     _check_fields(fields)
     r = root()
     _wiki(r)
-    f = {"format": 2, "date": dt.date.today().isoformat(), "release": "private", "created_by": _agent(agent)}
+    a = _agent(agent)
+    if fields.get("type") in ("decision", "proposal") or any(k in fields for k in AGENT_MAY_NOT_SET):
+        raise StoreError("decisions are not written here: decision cards come only from the decision log tool, "
+                         "and %s only through proposal_create" % ", ".join(AGENT_MAY_NOT_SET))
+    if fields.get("created_by", a) != a:
+        raise StoreError("created_by is set by this tool to %r (the agent writing the card); do not pass another value" % a)
+    f = {"format": 2, "date": dt.date.today().isoformat(), "release": "private", "created_by": a}
     f.update(fields)
-    if f.get("type") in ("decision", "proposal"):
-        raise StoreError("decision cards are written only by the decision log tool; use proposal_create for a proposal")
     errors = cardformat.validate(f, strict=True)
     if errors:
         raise StoreError("card not valid: " + "; ".join(errors))
@@ -216,13 +221,14 @@ def propose(question, proposal, options=None, quote=None, ref=None, decided_by="
         f.update(decided_by=decided_by, decided_quote=quote, decided_ref=ref, layer="said", source=ref)
     folder = os.path.join(r, "wiki", "vorschlaege")
     os.makedirs(folder, mode=0o700, exist_ok=True)
-    n = 1 + sum(1 for x in os.listdir(folder) if x.startswith("B-%s-" % today))
+    taken = [re.match(r"^B-%s-(\d+)\b" % today, x) for x in os.listdir(folder)]
+    n = 1 + max([int(m.group(1)) for m in taken if m] or [0])
     while True:
         f["id"] = "B-%s-%d" % (today, n)
         errors = cardformat.validate(f, strict=True)
         if errors:
             raise StoreError("proposal not valid: " + "; ".join(errors))
-        name = "%s_%s.md" % (f["id"], _slug(question)[:40])
+        name = f["id"] + ".md"  # the file name is the id, so creating it exclusively also reserves the number
         body = "\n# Proposal %s: %s\n\nThis is a proposal by %s, not a decision. The owner confirms or discards it.\n" % (
             f["id"], f["title"], a) + ("\nThe owner said: \"%s\" (%s)\n" % (quote, ref) if quote else "")
         try:

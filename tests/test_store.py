@@ -88,6 +88,9 @@ class Write(Base):
             (dict(TOPIC, id="x3", created_by="Somebody"), "created_by"),
             (dict(TOPIC, id="x4", layer="evidenced", source=None), "not valid"),
             ({"id": "x5", "type": "topic", "title": "t", "language": "en", "bad key": 1}, "invalid field names"),
+            (dict(TOPIC, id="x7", created_by="human"), "created_by is set by this tool"),
+            (dict(TOPIC, id="x8", decided_by="human", decided_quote="Yes.", decided_ref="chat:s@t"), "proposal_create"),
+            (dict(TOPIC, id="x9", proposed_by="agent:tester"), "proposal_create"),
         ]
         for fields, msg in cases:
             with self.assertRaisesRegex(store.StoreError, msg):
@@ -113,6 +116,7 @@ class Proposal(Base):
         r = store.propose("Keep the garden service?", "Cancel it", quote="We cancel the garden service.",
                           ref="chat:s1@2026-10-19T10:00")
         self.assertTrue(r["id"].endswith("-2"))
+        self.assertEqual(r["path"], "wiki/vorschlaege/%s.md" % r["id"])
         f = cardformat.check(self.read(r["path"]))["fields"]
         self.assertEqual((f["decided_by"], f["decided_quote"], f["decided_ref"]),
                          ("human", "We cancel the garden service.", "chat:s1@2026-10-19T10:00"))
@@ -124,6 +128,13 @@ class Proposal(Base):
         with self.assertRaisesRegex(store.StoreError, "quote and ref"):
             store.propose("q?", "a", ref="chat:s@t")
         self.assertEqual(os.listdir(os.path.join(self.root, "wiki", "vorschlaege")), [])
+
+    def test_numbers_never_repeat(self):
+        ids = [store.propose("Question %d?" % i, "a")["id"] for i in range(5)]
+        os.remove(os.path.join(self.root, "wiki", "vorschlaege", ids[1] + ".md"))
+        ids.append(store.propose("Another?", "b")["id"])
+        self.assertEqual(len(set(ids)), 6)
+        self.assertTrue(ids[-1].endswith("-6"))
 
     def test_bad_agent_name(self):
         with self.assertRaisesRegex(store.StoreError, "agent name"):

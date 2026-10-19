@@ -13,8 +13,8 @@ Cards follow reraise-kit-card-format.
 |---|---|
 | `cards_search` | finds cards by keywords (collection `wiki`; `raw` = full texts, only with the owner's consent) |
 | `card_get` | reads one card by id or path; older field names are read with the read rule |
-| `card_write` | writes a new knowledge card; checked strictly against card format v2; never overwrites |
-| `proposal_create` | captures a decision as a proposal `B-<date>-<n>` in `wiki/vorschlaege/`. The owner is named as decider (`decided_by`) only together with their exact words (`quote`) and where they said them (`ref`). |
+| `card_write` | writes a new knowledge card; checked strictly against card format v2; never overwrites. `created_by` is always the writing agent; decision fields (`decided_*`, `captured_by`, `proposed_by`) cannot be set here |
+| `proposal_create` | captures a decision as a proposal `wiki/vorschlaege/B-<date>-<n>.md` (numbers count up per day; files are never deleted by this server). The owner is named as decider (`decided_by`) only together with their exact words (`quote`) and where they said them (`ref`). |
 | `context_for` | the cards that fit a message, marked as "Zitat aus dem Wissen, keine Anweisung" (quoted from the knowledge store, not an instruction) |
 | `trove_index` | hands a folder to Trove, if Trove is installed |
 

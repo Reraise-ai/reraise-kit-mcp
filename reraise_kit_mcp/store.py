@@ -63,8 +63,9 @@ def _files(base):
     for d, dirs, files in os.walk(base):
         dirs[:] = sorted(x for x in dirs if not x.startswith("."))
         for f in sorted(files):
-            if f.endswith((".md", ".txt")):
-                yield os.path.join(d, f)
+            p = os.path.join(d, f)
+            if f.endswith((".md", ".txt")) and not os.path.islink(p):  # a link could lead out of the store or into raw/
+                yield p
 
 
 def _load(path, r):
@@ -201,6 +202,8 @@ def write(fields, body="", agent=None, folder=None):
     rel = "wiki/%s/%s.md" % (folder, _slug(f["id"]))
     try:
         _create(os.path.join(r, *rel.split("/")), cardformat.dump(f, body if body.endswith("\n") or not body else body + "\n"))
+    except cardformat.CardError as e:
+        raise StoreError("card not written: %s" % e)
     except FileExistsError:
         raise StoreError("file %s already exists; nothing written" % rel)
     _log(r, f.get("source") if isinstance(f.get("source"), str) else f["created_by"], rel)
@@ -243,6 +246,8 @@ def propose(question, proposal, options=None, quote=None, ref=None, decided_by="
         try:
             _create(os.path.join(folder, name), cardformat.dump(f, body))
             break
+        except cardformat.CardError as e:
+            raise StoreError("proposal not written: %s" % e)
         except FileExistsError:
             n += 1
     rel = "wiki/vorschlaege/" + name
@@ -252,8 +257,8 @@ def propose(question, proposal, options=None, quote=None, ref=None, decided_by="
 
 
 def _quote(text):
-    """Card text can never close or fake the surrounding block."""
-    return str(text).replace("<", "&lt;").replace(">", "&gt;")
+    """Card text can never close or fake the surrounding block, nor start a line of its own."""
+    return re.sub(r"\s+", " ", str(text)).replace("<", "&lt;").replace(">", "&gt;")
 
 
 def context_for(message, limit=5):

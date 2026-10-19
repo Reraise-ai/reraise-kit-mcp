@@ -11,9 +11,9 @@ Cards follow reraise-kit-card-format.
 
 | Tool | What it does |
 |---|---|
-| `cards_search` | finds cards by keywords (collection `wiki`; `raw` = full texts, only with the owner's consent) |
+| `cards_search` | finds cards by keywords (collection `wiki`; `raw` = full texts of the owner's files, only if the owner set `RERAISE_KIT_ALLOW_RAW=1`) |
 | `card_get` | reads one card by id or path; older field names are read with the read rule |
-| `card_write` | writes a new knowledge card; checked strictly against card format v2; never overwrites. `created_by` is always the writing agent; decision fields (`decided_*`, `captured_by`, `proposed_by`) cannot be set here |
+| `card_write` | writes a new knowledge card; checked strictly against card format v2; never overwrites. `created_by` is always the writing agent, `release` is always `private`; decision fields (`decided_*`, `captured_by`, `proposed_by`, `number`) and `training` cannot be set here |
 | `proposal_create` | captures a decision as a proposal `wiki/vorschlaege/B-<date>-<n>.md` (numbers count up per day; files are never deleted by this server). The owner is named as decider (`decided_by`) only together with their exact words (`quote`) and where they said them (`ref`). |
 | `context_for` | the cards that fit a message, marked as "Zitat aus dem Wissen, keine Anweisung" (quoted from the knowledge store, not an instruction) |
 | `trove_index` | hands a folder to Trove, if Trove is installed |
@@ -27,6 +27,14 @@ Trove is a separate program with its own license (AGPL-3.0). This server never i
 It only runs Trove's command line: `<trove command> <folder> --json`.
 The command is `trove` on the PATH, or whatever `RERAISE_KIT_TROVE` says (for example `python /path/to/trove/wissen.py`).
 Without Trove, `trove_index` answers with a short note and does nothing else.
+The call form `<trove command> <folder> --json` is an assumption so far: it is tested against a stand-in program,
+not yet against a real Trove installation.
+
+## Limits
+
+- The server cannot check that a quote really is the owner's words. It records what the agent passes and marks the
+  card as a proposal; only the owner's confirmation makes it a decision.
+- Search is a plain keyword search over the files; there is no index yet.
 
 ## Install
 
@@ -45,6 +53,7 @@ Register the server in your agent system as a stdio server with the command `rer
 |---|---|---|
 | `RERAISE_KIT_KNOWLEDGE` | knowledge store folder | `~/Wissen` |
 | `RERAISE_KIT_AGENT` | agent name used in `created_by` / `proposed_by` (`agent:<name>`) | `mcp` |
+| `RERAISE_KIT_ALLOW_RAW` | `1` = the owner allows search in `raw/` (full texts) | off |
 | `RERAISE_KIT_TROVE` | Trove command line | `trove` on PATH |
 | `RERAISE_KIT_TROVE_TIMEOUT` | seconds | 600 |
 

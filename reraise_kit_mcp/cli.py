@@ -42,7 +42,7 @@ def main(argv=None):
         print(out or "No matching cards.")
         return 0
     print(__doc__)
-    return 2
+    return 0 if args[:1] in (["--help"], ["-h"], ["help"]) else 2
 
 
 if __name__ == "__main__":
